@@ -20,6 +20,8 @@
 	<string>TRiANGL needs camera access for AR scanning and LiDAR depth sensing</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>TRiANGL needs local network access to discover and scan WiFi devices on your network</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>TRiANGL needs location access to get WiFi network information for heatmap visualization</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_http._tcp</string>
