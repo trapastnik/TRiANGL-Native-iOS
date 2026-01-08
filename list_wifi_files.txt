@@ -1,0 +1,19 @@
+WiFi Files to add in Xcode:
+
+Full paths (copy-paste into Xcode "Add Files" dialog):
+
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiDevice.swift
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiScanner.swift
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiScannerView.swift
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiSignalMeasurement.swift
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiSignalMonitor.swift
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiHeatmapManager.swift
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiHeatmapARContainer.swift
+/home/user/TRiANGL-Native-iOS/TRiANGL/TRiANGL/WiFiHeatmapView.swift
+
+Instructions:
+1. In Xcode: File → Add Files to "TRiANGL"
+2. Press Cmd+Shift+G to open "Go to folder"
+3. Paste the TRiANGL/TRiANGL path
+4. Search for "WiFi"
+5. Select all 8 files and click Add
