@@ -377,13 +377,22 @@ struct ARViewContainer: UIViewRepresentable {
                     cachedViewportSize = viewportSize
                 }
 
+                // Adjust displayTransform for depth map resolution
+                // displayTransform is calculated for camera resolution, but depth map has different resolution
+                // We need to scale the transform to account for resolution difference
+                let adjustedTransform = adjustTransformForDepthResolution(
+                    displayTransform: displayTransform,
+                    depthMap: depthMap,
+                    frame: frame
+                )
+
                 // Route to appropriate renderer
                 if settings.renderMode == .metal {
                     // Metal rendering (GPU-only path)
                     renderDepthMapMetal(
                         depthMap: depthMap,
                         frame: frame,
-                        displayTransform: displayTransform
+                        displayTransform: adjustedTransform
                     )
 
                     let renderTime = (CACurrentMediaTime() - startTime) * 1000
@@ -417,6 +426,44 @@ struct ARViewContainer: UIViewRepresentable {
                     }
                 }
             }
+        }
+
+        private func adjustTransformForDepthResolution(
+            displayTransform: CGAffineTransform,
+            depthMap: CVPixelBuffer,
+            frame: ARFrame
+        ) -> CGAffineTransform {
+            // Problem: displayTransform is calculated for camera resolution,
+            // but we're applying it to depth map with different resolution
+            //
+            // Camera: ~1920×1440 (e.g. iPhone 13 Pro)
+            // Depth:  256×192 (LiDAR sensor)
+            // Ratio:  ~7.5x width, ~7.5x height
+            //
+            // displayTransform already handles:
+            // - Device orientation (portrait/landscape rotation)
+            // - Aspect ratio fitting to viewport
+            // - Mirroring if needed
+            //
+            // But it assumes source texture has camera resolution!
+            // Since depth is lower-res, we need inverse scale compensation
+
+            let cameraResolution = frame.camera.imageResolution
+            let depthWidth = CGFloat(CVPixelBufferGetWidth(depthMap))
+            let depthHeight = CGFloat(CVPixelBufferGetHeight(depthMap))
+
+            // Calculate inverse scale (camera_res / depth_res)
+            // This compensates for the fact that displayTransform expects camera resolution
+            let scaleX = cameraResolution.width / depthWidth
+            let scaleY = cameraResolution.height / depthHeight
+
+            // Create compensation transform
+            // We need to PRE-scale coordinates before applying displayTransform
+            let compensationTransform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+
+            // Combine: first apply compensation, then displayTransform
+            // Result coordinates: texCoord -> scaled -> oriented -> viewport
+            return compensationTransform.concatenating(displayTransform)
         }
 
         private func renderDepthMapMetal(
