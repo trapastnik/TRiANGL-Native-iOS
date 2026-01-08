@@ -100,12 +100,23 @@ class DepthRenderer {
         }
     }
 
-    func render(depthMap: CVPixelBuffer, to drawable: CAMetalDrawable) {
+    func render(depthMap: CVPixelBuffer, to drawable: CAMetalDrawable, interfaceOrientation: UIInterfaceOrientation = .portrait, minDepth: Float = 1.0, maxDepth: Float = 4.0, alpha: Float = 0.7) {
         guard let pipelineState = pipelineState,
               let commandBuffer = commandQueue.makeCommandBuffer(),
               let depthTexture = createTexture(from: depthMap) else {
             return
         }
+
+        // Calculate transform matrix for proper orientation
+        // ARKit depth is in sensor orientation, need to match display orientation
+        let transformMatrix = getTransformMatrix(for: interfaceOrientation)
+
+        var transform = transformMatrix
+        let transformSize = MemoryLayout<simd_float3x3>.stride
+
+        // Depth range parameters
+        var depthParams = simd_float4(minDepth, maxDepth, alpha, 0)
+        let depthParamsSize = MemoryLayout<simd_float4>.stride
 
         // Create render pass
         let renderPassDescriptor = MTLRenderPassDescriptor()
@@ -120,12 +131,60 @@ class DepthRenderer {
 
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        renderEncoder.setVertexBytes(&transform, length: transformSize, index: 1)
         renderEncoder.setFragmentTexture(depthTexture, index: 0)
+        renderEncoder.setFragmentBytes(&depthParams, length: depthParamsSize, index: 0)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
         renderEncoder.endEncoding()
 
         commandBuffer.present(drawable)
         commandBuffer.commit()
+    }
+
+    private func getTransformMatrix(for orientation: UIInterfaceOrientation) -> simd_float3x3 {
+        // Transform texture coordinates to match interface orientation
+        // Portrait: rotate 90° clockwise (sensor is landscape left)
+        // LandscapeRight: rotate 180° (sensor upside down)
+        // PortraitUpsideDown: rotate 90° counter-clockwise
+        // LandscapeLeft: no rotation
+
+        switch orientation {
+        case .portrait:
+            // Rotate 90° clockwise: (x,y) -> (1-y, x)
+            return simd_float3x3(
+                simd_float3(0, 1, 0),   // new x = old y
+                simd_float3(-1, 0, 1),  // new y = 1 - old x
+                simd_float3(0, 0, 1)
+            )
+        case .portraitUpsideDown:
+            // Rotate 90° counter-clockwise: (x,y) -> (y, 1-x)
+            return simd_float3x3(
+                simd_float3(0, -1, 1),  // new x = 1 - old y
+                simd_float3(1, 0, 0),   // new y = old x
+                simd_float3(0, 0, 1)
+            )
+        case .landscapeLeft:
+            // Rotate 180°: (x,y) -> (1-x, 1-y)
+            return simd_float3x3(
+                simd_float3(-1, 0, 1),  // new x = 1 - old x
+                simd_float3(0, -1, 1),  // new y = 1 - old y
+                simd_float3(0, 0, 1)
+            )
+        case .landscapeRight:
+            // No rotation (identity)
+            return simd_float3x3(
+                simd_float3(1, 0, 0),
+                simd_float3(0, 1, 0),
+                simd_float3(0, 0, 1)
+            )
+        default:
+            // Default to portrait
+            return simd_float3x3(
+                simd_float3(0, 1, 0),
+                simd_float3(-1, 0, 1),
+                simd_float3(0, 0, 1)
+            )
+        }
     }
 
     private func createTexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {

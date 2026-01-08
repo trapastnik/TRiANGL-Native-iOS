@@ -12,24 +12,36 @@ struct VertexOut {
     float2 texCoord;
 };
 
-// Simple vertex shader for full-screen quad
-vertex VertexOut depthVertexShader(VertexIn in [[stage_in]]) {
+// Simple vertex shader for full-screen quad with orientation transform
+vertex VertexOut depthVertexShader(VertexIn in [[stage_in]],
+                                   constant float3x3& transform [[buffer(1)]]) {
     VertexOut out;
     out.position = float4(in.position, 0.0, 1.0);
-    out.texCoord = in.texCoord;
+
+    // Apply transform to texture coordinates for proper orientation
+    float3 transformedCoord = transform * float3(in.texCoord, 1.0);
+    out.texCoord = transformedCoord.xy;
+
     return out;
 }
 
-// Fragment shader to convert depth to color gradient
+// Fragment shader to convert depth to color gradient with configurable parameters
 fragment float4 depthFragmentShader(VertexOut in [[stage_in]],
-                                   texture2d<float, access::sample> depthTexture [[texture(0)]]) {
+                                   texture2d<float, access::sample> depthTexture [[texture(0)]],
+                                   constant float4& depthParams [[buffer(0)]]) {
     constexpr sampler textureSampler(mag_filter::linear, min_filter::linear);
 
     // Sample depth value
     float depth = depthTexture.sample(textureSampler, in.texCoord).r;
 
-    // Normalize depth to 0-1 range (1-4 meters)
-    float normalizedDepth = clamp((depth - 1.0) / 3.0, 0.0, 1.0);
+    // Extract parameters: minDepth, maxDepth, alpha
+    float minDepth = depthParams.x;
+    float maxDepth = depthParams.y;
+    float alpha = depthParams.z;
+    float depthRange = maxDepth - minDepth;
+
+    // Normalize depth to 0-1 range using configurable min/max
+    float normalizedDepth = clamp((depth - minDepth) / depthRange, 0.0, 1.0);
 
     // Create color gradient: Blue (close) -> Cyan -> Green -> Yellow -> Red (far)
     float3 color;
@@ -52,5 +64,5 @@ fragment float4 depthFragmentShader(VertexOut in [[stage_in]],
         color = float3(1.0, 1.0 - t, 0.0);
     }
 
-    return float4(color, 0.7);  // 0.7 alpha for transparency
+    return float4(color, alpha);  // Use configurable alpha
 }

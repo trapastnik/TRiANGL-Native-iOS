@@ -58,12 +58,18 @@ struct ARViewContainer: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: ARView, context: Context) {
-        // Update alpha for both overlays
+        // Lightweight: Update alpha for both overlays
         context.coordinator.depthOverlay?.alpha = CGFloat(settings.overlayAlpha)
         context.coordinator.metalView?.layer.opacity = settings.overlayAlpha
 
-        // Update depth map visualization
-        context.coordinator.updateDepthMap(show: arManager.showDepthMap, session: arManager.session)
+        // Only update depth map if showing (expensive operation)
+        if arManager.showDepthMap {
+            context.coordinator.updateDepthMap(show: true, session: arManager.session)
+        } else {
+            // Hide both depth overlays when not showing
+            context.coordinator.depthOverlay?.isHidden = true
+            context.coordinator.metalView?.isHidden = true
+        }
 
         // Visualize detected planes with visibility filters
         context.coordinator.updatePlaneVisualization(
@@ -100,6 +106,10 @@ struct ARViewContainer: UIViewRepresentable {
         private let depthProcessingQueue = DispatchQueue(label: "com.triangl.depthProcessing", qos: .userInitiated)
         private var lastFrameTime: CFTimeInterval = 0
         private var frameCount = 0
+
+        // Throttle updateUIView calls for Metal rendering
+        private var lastMetalRenderTime: CFTimeInterval = 0
+        private let minMetalRenderInterval: CFTimeInterval = 1.0 / 60.0 // Max 60 FPS for Metal updates
 
         func updatePlaneVisualization(planes: [UUID: PlaneInfo], showCeiling: Bool, showWalls: Bool, in arView: ARView) {
             // Remove planes that no longer exist
@@ -369,13 +379,29 @@ struct ARViewContainer: UIViewRepresentable {
         }
 
         private func renderDepthMapMetal(depthMap: CVPixelBuffer) {
+            // Throttle Metal rendering to prevent excessive GPU calls
+            let currentTime = CACurrentMediaTime()
+            guard currentTime - lastMetalRenderTime >= minMetalRenderInterval else {
+                return
+            }
+            lastMetalRenderTime = currentTime
+
             guard let metalView = metalView,
                   let metalRenderer = metalRenderer,
-                  let drawable = metalView.currentDrawable else {
+                  let drawable = metalView.currentDrawable,
+                  let settings = settings else {
                 return
             }
 
-            metalRenderer.render(depthMap: depthMap, to: drawable)
+            let interfaceOrientation = getInterfaceOrientation()
+            metalRenderer.render(
+                depthMap: depthMap,
+                to: drawable,
+                interfaceOrientation: interfaceOrientation,
+                minDepth: settings.minDepth,
+                maxDepth: settings.maxDepth,
+                alpha: settings.overlayAlpha
+            )
         }
 
         private func getInterfaceOrientation() -> UIInterfaceOrientation {
