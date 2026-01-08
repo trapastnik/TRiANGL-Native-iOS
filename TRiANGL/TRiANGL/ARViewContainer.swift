@@ -111,6 +111,11 @@ struct ARViewContainer: UIViewRepresentable {
         private var lastMetalRenderTime: CFTimeInterval = 0
         private let minMetalRenderInterval: CFTimeInterval = 1.0 / 60.0 // Max 60 FPS for Metal updates
 
+        // Cache expensive calculations
+        private var cachedDisplayTransform: CGAffineTransform?
+        private var cachedInterfaceOrientation: UIInterfaceOrientation = .portrait
+        private var cachedViewportSize: CGSize = .zero
+
         func updatePlaneVisualization(planes: [UUID: PlaneInfo], showCeiling: Bool, showWalls: Bool, in arView: ARView) {
             // Remove planes that no longer exist
             for (id, entityInfo) in planeEntities {
@@ -339,13 +344,23 @@ struct ARViewContainer: UIViewRepresentable {
 
                 let startTime = CACurrentMediaTime()
 
-                // Calculate camera intrinsics scaled to depth resolution
-                let cameraIntrinsics = calculateDepthIntrinsics(frame: frame, depthMap: depthMap)
-
-                // Get displayTransform for perfect alignment
+                // Get current orientation and viewport
                 let viewportSize = arView.bounds.size
                 let interfaceOrientation = getInterfaceOrientation()
-                let displayTransform = frame.displayTransform(for: interfaceOrientation, viewportSize: viewportSize)
+
+                // Get or calculate displayTransform
+                // Only recalculate if orientation or viewport changed
+                let displayTransform: CGAffineTransform
+                if cachedInterfaceOrientation == interfaceOrientation &&
+                   cachedViewportSize == viewportSize,
+                   let cached = cachedDisplayTransform {
+                    displayTransform = cached
+                } else {
+                    displayTransform = frame.displayTransform(for: interfaceOrientation, viewportSize: viewportSize)
+                    cachedDisplayTransform = displayTransform
+                    cachedInterfaceOrientation = interfaceOrientation
+                    cachedViewportSize = viewportSize
+                }
 
                 // Route to appropriate renderer
                 if settings.renderMode == .metal {
@@ -353,7 +368,6 @@ struct ARViewContainer: UIViewRepresentable {
                     renderDepthMapMetal(
                         depthMap: depthMap,
                         frame: frame,
-                        cameraIntrinsics: cameraIntrinsics,
                         displayTransform: displayTransform
                     )
 
@@ -390,37 +404,9 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
 
-        private func calculateDepthIntrinsics(frame: ARFrame, depthMap: CVPixelBuffer) -> simd_float3x3 {
-            // Get camera intrinsics
-            let cameraIntrinsics = frame.camera.intrinsics
-            let cameraResolution = frame.camera.imageResolution
-
-            // Get depth resolution
-            let depthWidth = Float(CVPixelBufferGetWidth(depthMap))
-            let depthHeight = Float(CVPixelBufferGetHeight(depthMap))
-
-            // Scale intrinsics to depth resolution
-            // Formula: depth_intrinsics = camera_intrinsics * (depth_res / camera_res)
-            let scaleX = depthWidth / Float(cameraResolution.width)
-            let scaleY = depthHeight / Float(cameraResolution.height)
-
-            // Scale focal lengths and principal point
-            let fx = cameraIntrinsics[0, 0] * scaleX
-            let fy = cameraIntrinsics[1, 1] * scaleY
-            let cx = cameraIntrinsics[2, 0] * scaleX
-            let cy = cameraIntrinsics[2, 1] * scaleY
-
-            return simd_float3x3(
-                simd_float3(fx, 0, 0),
-                simd_float3(0, fy, 0),
-                simd_float3(cx, cy, 1)
-            )
-        }
-
         private func renderDepthMapMetal(
             depthMap: CVPixelBuffer,
             frame: ARFrame,
-            cameraIntrinsics: simd_float3x3,
             displayTransform: CGAffineTransform
         ) {
             // Throttle Metal rendering to prevent excessive GPU calls
@@ -445,7 +431,6 @@ struct ARViewContainer: UIViewRepresentable {
                 minDepth: settings.minDepth,
                 maxDepth: settings.maxDepth,
                 alpha: settings.overlayAlpha,
-                cameraIntrinsics: cameraIntrinsics,
                 displayTransform: displayTransform
             )
         }

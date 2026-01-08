@@ -107,7 +107,6 @@ class DepthRenderer {
         minDepth: Float = 1.0,
         maxDepth: Float = 4.0,
         alpha: Float = 0.7,
-        cameraIntrinsics: simd_float3x3? = nil,
         displayTransform: CGAffineTransform? = nil
     ) {
         guard let pipelineState = pipelineState,
@@ -134,9 +133,8 @@ class DepthRenderer {
         var depthParams = simd_float4(minDepth, maxDepth, alpha, 0)
         let depthParamsSize = MemoryLayout<simd_float4>.stride
 
-        // Camera intrinsics for precise alignment
-        var intrinsics = cameraIntrinsics ?? simd_float3x3(1.0) // Identity if not provided
-        let intrinsicsSize = MemoryLayout<simd_float3x3>.stride
+        // Note: Camera intrinsics removed from pipeline
+        // displayTransform already provides accurate alignment including camera properties
 
         // Create render pass
         let renderPassDescriptor = MTLRenderPassDescriptor()
@@ -152,7 +150,7 @@ class DepthRenderer {
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         renderEncoder.setVertexBytes(&transform, length: transformSize, index: 1)
-        renderEncoder.setVertexBytes(&intrinsics, length: intrinsicsSize, index: 2)
+        // Intrinsics buffer removed - not needed with displayTransform
         renderEncoder.setFragmentTexture(depthTexture, index: 0)
         renderEncoder.setFragmentBytes(&depthParams, length: depthParamsSize, index: 0)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)

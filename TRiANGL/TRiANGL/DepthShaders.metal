@@ -12,20 +12,16 @@ struct VertexOut {
     float2 texCoord;
 };
 
-// Vertex shader for full-screen quad with orientation transform and intrinsics
+// Vertex shader for full-screen quad with orientation transform
+// Note: Camera intrinsics removed - displayTransform already handles alignment
 vertex VertexOut depthVertexShader(VertexIn in [[stage_in]],
-                                   constant float3x3& transform [[buffer(1)]],
-                                   constant float3x3& intrinsics [[buffer(2)]]) {
+                                   constant float3x3& transform [[buffer(1)]]) {
     VertexOut out;
     out.position = float4(in.position, 0.0, 1.0);
 
     // Apply transform to texture coordinates for proper orientation and alignment
-    // This handles device orientation (portrait/landscape)
+    // displayTransform already accounts for camera properties and orientation
     float3 transformedCoord = transform * float3(in.texCoord, 1.0);
-
-    // Note: intrinsics are passed but not used in vertex shader
-    // They could be used for advanced lens distortion correction if needed
-
     out.texCoord = transformedCoord.xy;
 
     return out;
