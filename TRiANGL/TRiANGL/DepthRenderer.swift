@@ -162,10 +162,16 @@ class DepthRenderer {
 
     private func convertCGAffineToSimd(_ transform: CGAffineTransform) -> simd_float3x3 {
         // Convert CGAffineTransform (2D) to simd_float3x3 (3D homogeneous)
-        // CGAffineTransform matrix format:
-        // | a  b  0 |
-        // | c  d  0 |
-        // | tx ty 1 |
+        //
+        // CGAffineTransform represents matrix:
+        // | a  c  tx |
+        // | b  d  ty |
+        // | 0  0  1  |
+        //
+        // simd_float3x3 is column-major, so we need to transpose:
+        // Column 0: (a, b, 0)
+        // Column 1: (c, d, 0)
+        // Column 2: (tx, ty, 1)
         return simd_float3x3(
             simd_float3(Float(transform.a), Float(transform.b), 0),
             simd_float3(Float(transform.c), Float(transform.d), 0),

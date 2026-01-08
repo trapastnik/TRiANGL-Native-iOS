@@ -344,18 +344,22 @@ struct ARViewContainer: UIViewRepresentable {
 
                 let startTime = CACurrentMediaTime()
 
-                // Get current orientation and viewport size
-                // IMPORTANT: Use metalView drawable size for Metal rendering, not ARView bounds
+                // Get current orientation
+                let interfaceOrientation = getInterfaceOrientation()
+
+                // CRITICAL FIX: displayTransform must use actual pixel dimensions
+                // drawable.texture size includes device scale factor (e.g. 2x or 3x for Retina)
                 let viewportSize: CGSize
                 if settings.renderMode == .metal, let metalView = metalView, let drawable = metalView.currentDrawable {
-                    // Use actual Metal drawable size for perfect alignment
-                    viewportSize = CGSize(width: drawable.texture.width, height: drawable.texture.height)
+                    // Use actual drawable texture size in pixels
+                    viewportSize = CGSize(
+                        width: CGFloat(drawable.texture.width),
+                        height: CGFloat(drawable.texture.height)
+                    )
                 } else {
-                    // Fallback to ARView bounds for CPU rendering
+                    // CPU rendering - use view bounds
                     viewportSize = arView.bounds.size
                 }
-
-                let interfaceOrientation = getInterfaceOrientation()
 
                 // Get or calculate displayTransform
                 // Only recalculate if orientation or viewport changed
@@ -365,6 +369,8 @@ struct ARViewContainer: UIViewRepresentable {
                    let cached = cachedDisplayTransform {
                     displayTransform = cached
                 } else {
+                    // displayTransform maps texture coordinates [0,1] to viewport
+                    // Handles device orientation, mirroring, and aspect ratio
                     displayTransform = frame.displayTransform(for: interfaceOrientation, viewportSize: viewportSize)
                     cachedDisplayTransform = displayTransform
                     cachedInterfaceOrientation = interfaceOrientation
