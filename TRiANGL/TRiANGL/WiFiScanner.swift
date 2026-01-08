@@ -115,7 +115,14 @@ class WiFiScanner: ObservableObject {
             print("Browser ready for \(serviceType)")
         case .failed(let error):
             print("Browser failed for \(serviceType): \(error)")
-            if browsers.allSatisfy({ $0.state == .failed }) {
+            // Check if all browsers have failed
+            let allFailed = browsers.allSatisfy { browser in
+                if case .failed = browser.state {
+                    return true
+                }
+                return false
+            }
+            if allFailed {
                 lastError = .scanFailed(error.localizedDescription)
                 statusMessage = "Scan failed"
             }
