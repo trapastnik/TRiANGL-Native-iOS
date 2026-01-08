@@ -142,7 +142,7 @@ class WiFiScanner: ObservableObject {
         }
     }
 
-    private func resolveEndpoint(_ endpoint: NWEndpoint, name: String, serviceType: String, domain: String) {
+    private func resolveEndpoint(_ endpoint: Network.NWEndpoint, name: String, serviceType: String, domain: String) {
         let connection = NWConnection(to: endpoint, using: .tcp)
 
         connection.stateUpdateHandler = { [weak self] state in
