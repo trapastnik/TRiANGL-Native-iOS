@@ -194,8 +194,8 @@ struct HeatmapStatistics {
     let measurementDuration: TimeInterval
 
     var signalQualityDistribution: [SignalQuality: Int] {
-        var distribution: [SignalQuality: Int] = [:]
+        // Return empty distribution for now
         // This would be calculated from actual measurements
-        return distribution
+        return [:]
     }
 }

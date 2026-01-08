@@ -159,7 +159,7 @@ class WiFiHeatmapManager: NSObject, ObservableObject {
 
         var newCells: [SIMD3<Int>: HeatmapCell] = gridCells
 
-        for (pos, cell) in gridCells {
+        for (pos, _) in gridCells {
             // Check neighboring cells
             for dx in -maxGridDistance...maxGridDistance {
                 for dy in -maxGridDistance...maxGridDistance {

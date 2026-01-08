@@ -129,14 +129,16 @@ struct WiFiHeatmapARContainer: UIViewRepresentable {
             }
         }
 
-        nonisolated private func createCellEntity(for cell: HeatmapCell, config: HeatmapConfiguration) -> ModelEntity {
+        private func createCellEntity(for cell: HeatmapCell, config: HeatmapConfiguration) -> ModelEntity {
             let size = config.gridSize * 0.8 // Slightly smaller for visual separation
 
             // Create mesh
             let mesh = MeshResource.generateBox(
                 width: size,
                 height: config.gridSize * 0.1,
-                depth: size
+                depth: size,
+                cornerRadius: 0,
+                splitFaces: false
             )
 
             // Create material with color based on signal strength
@@ -154,7 +156,7 @@ struct WiFiHeatmapARContainer: UIViewRepresentable {
             return entity
         }
 
-        nonisolated private func updateCellEntity(_ entity: ModelEntity, for cell: HeatmapCell, config: HeatmapConfiguration) {
+        private func updateCellEntity(_ entity: ModelEntity, for cell: HeatmapCell, config: HeatmapConfiguration) {
             // Update color based on signal strength
             let strength = cell.averageNormalizedStrength
             let color = signalStrengthToColor(strength)
@@ -190,7 +192,7 @@ struct WiFiHeatmapARContainer: UIViewRepresentable {
             }
         }
 
-        nonisolated private func createDeadZoneEntity(for zone: DeadZone, config: HeatmapConfiguration) -> ModelEntity {
+        private func createDeadZoneEntity(for zone: DeadZone, config: HeatmapConfiguration) -> ModelEntity {
             // Create sphere mesh
             let mesh = MeshResource.generateSphere(radius: zone.radius)
 

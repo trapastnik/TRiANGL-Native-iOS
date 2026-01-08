@@ -148,18 +148,18 @@ class WiFiSignalMonitor: NSObject, ObservableObject {
 // MARK: - CLLocationManagerDelegate
 
 extension WiFiSignalMonitor: CLLocationManagerDelegate {
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         if status == .authorizedWhenInUse || status == .authorizedAlways {
-            Task {
-                await updateSignalStrength()
+            Task { @MainActor in
+                await self.updateSignalStrength()
             }
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // Location updates can trigger WiFi info refresh
-        Task {
-            await updateSignalStrength()
+        Task { @MainActor in
+            await self.updateSignalStrength()
         }
     }
 }

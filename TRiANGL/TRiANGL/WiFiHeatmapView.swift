@@ -57,11 +57,10 @@ struct WiFiHeatmapView: View {
             }
         }
         .onAppear {
-            if let session = heatmapManager.arSession {
-                // Already have a session
-            } else {
-                // Create new session
-                // The session will be created by ARContainer
+            // AR session will be created by ARContainer
+            // Check if we need to initialize anything
+            if heatmapManager.arSession == nil {
+                // Session will be set up by WiFiHeatmapARContainer
             }
         }
     }
