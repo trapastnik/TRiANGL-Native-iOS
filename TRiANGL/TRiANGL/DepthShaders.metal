@@ -20,8 +20,32 @@ vertex VertexOut depthVertexShader(VertexIn in [[stage_in]],
     out.position = float4(in.position, 0.0, 1.0);
 
     // Apply transform to texture coordinates for proper orientation and alignment
-    // displayTransform already accounts for camera properties and orientation
     float3 transformedCoord = transform * float3(in.texCoord, 1.0);
+
+    // Scale compensation for FOV mismatch between LiDAR and camera
+    //
+    // Why scale mismatch exists:
+    // 1. Different sensor FOV (Field of View):
+    //    - Camera: ~60-70° horizontal FOV
+    //    - LiDAR: Different FOV, causes objects to appear at different scales
+    //
+    // 2. Different focal lengths:
+    //    - Camera intrinsics: fx, fy (focal length in pixels)
+    //    - LiDAR intrinsics: Different values
+    //    - Ratio: camera_fx / lidar_fx determines scale factor
+    //
+    // 3. Physical sensor separation:
+    //    - Camera and LiDAR are ~1-2cm apart on device
+    //    - Creates parallax at close distances
+    //
+    // Solution: Scale texture coordinates to match camera FOV
+    // scale > 1.0 = zoom out (samples larger area, makes depth appear smaller)
+    // scale < 1.0 = zoom in (samples smaller area, makes depth appear larger)
+    float2 center = float2(0.5, 0.5);
+    float scale = 1.3; // Empirically determined via crosshair testing
+                       // Adjust based on your device/testing
+    transformedCoord.xy = (transformedCoord.xy - center) * scale + center;
+
     out.texCoord = transformedCoord.xy;
 
     return out;

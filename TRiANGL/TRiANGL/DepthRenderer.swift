@@ -11,16 +11,17 @@ class DepthRenderer {
     private var vertexBuffer: MTLBuffer?
 
     // Full-screen quad vertices (position + texCoord)
-    // Note: Y texture coordinates inverted (1.0 at top, 0.0 at bottom)
-    // to match depth map orientation
+    // Note: Both X and Y texture coordinates inverted to match depth map orientation
+    // X inverted: 1.0 at left, 0.0 at right (depth map is horizontally mirrored)
+    // Y inverted: 1.0 at top, 0.0 at bottom (depth map uses top-down convention)
     private let quadVertices: [Float] = [
-        // Positions       // TexCoords (Y inverted)
-        -1.0,  1.0,        0.0, 1.0,  // Top left
-        -1.0, -1.0,        0.0, 0.0,  // Bottom left
-         1.0, -1.0,        1.0, 0.0,  // Bottom right
-        -1.0,  1.0,        0.0, 1.0,  // Top left
-         1.0, -1.0,        1.0, 0.0,  // Bottom right
-         1.0,  1.0,        1.0, 1.0   // Top right
+        // Positions       // TexCoords (X and Y inverted)
+        -1.0,  1.0,        1.0, 1.0,  // Top left
+        -1.0, -1.0,        1.0, 0.0,  // Bottom left
+         1.0, -1.0,        0.0, 0.0,  // Bottom right
+        -1.0,  1.0,        1.0, 1.0,  // Top left
+         1.0, -1.0,        0.0, 0.0,  // Bottom right
+         1.0,  1.0,        0.0, 1.0   // Top right
     ]
 
     init?() {
