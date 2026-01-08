@@ -10,6 +10,15 @@ struct ScannerView: View {
             ARViewContainer(arManager: arManager, settings: arManager.depthSettings)
                 .edgesIgnoringSafeArea(.all)
 
+            // Crosshair overlay (only when depth map is shown)
+            if arManager.showDepthMap {
+                DepthCrosshairView(
+                    centerDistance: arManager.depthSettings.centerDistance,
+                    isEnabled: arManager.depthSettings.showCrosshair
+                )
+                .allowsHitTesting(false)
+            }
+
             // UI Overlay
             VStack {
                 // Top Status Bar

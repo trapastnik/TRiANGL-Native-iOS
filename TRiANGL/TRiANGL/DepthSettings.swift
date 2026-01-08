@@ -53,6 +53,10 @@ class DepthSettings: ObservableObject {
     @Published var fps: Double = 0.0
     @Published var renderTime: Double = 0.0
 
+    // Center distance measurement (for crosshair)
+    @Published var centerDistance: Float? = nil
+    @Published var showCrosshair: Bool = true
+
     // Show/hide settings panel
     @Published var showSettings: Bool = false
 }

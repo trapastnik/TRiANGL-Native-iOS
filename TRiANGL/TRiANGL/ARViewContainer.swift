@@ -342,6 +342,12 @@ struct ARViewContainer: UIViewRepresentable {
 
                 guard let depthMap = depthData, let arView = arView else { return }
 
+                // Sample depth at screen center for crosshair display
+                let centerDepth = sampleDepthAtCenter(depthMap: depthMap)
+                DispatchQueue.main.async {
+                    settings.centerDistance = centerDepth
+                }
+
                 let startTime = CACurrentMediaTime()
 
                 // Get current orientation
@@ -456,6 +462,40 @@ struct ARViewContainer: UIViewRepresentable {
                 return .portrait
             }
             return windowScene.effectiveGeometry.interfaceOrientation
+        }
+
+        private func sampleDepthAtCenter(depthMap: CVPixelBuffer) -> Float? {
+            // Lock the pixel buffer for reading
+            CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+            defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+
+            // Get depth map dimensions
+            let width = CVPixelBufferGetWidth(depthMap)
+            let height = CVPixelBufferGetHeight(depthMap)
+
+            // Calculate center pixel coordinates
+            let centerX = width / 2
+            let centerY = height / 2
+
+            // Get pointer to depth data
+            guard let baseAddress = CVPixelBufferGetBaseAddress(depthMap) else {
+                return nil
+            }
+
+            let bytesPerRow = CVPixelBufferGetBytesPerRow(depthMap)
+            let depthPointer = baseAddress.assumingMemoryBound(to: Float32.self)
+
+            // Sample depth at center pixel
+            let offset = centerY * (bytesPerRow / MemoryLayout<Float32>.stride) + centerX
+            let depthValue = depthPointer[offset]
+
+            // Return depth value in meters (ARKit depth is already in meters)
+            // Filter out invalid values
+            if depthValue > 0 && depthValue < 100 {
+                return depthValue
+            }
+
+            return nil
         }
 
         private func depthMapToImage(
