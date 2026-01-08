@@ -12,14 +12,20 @@ struct VertexOut {
     float2 texCoord;
 };
 
-// Simple vertex shader for full-screen quad with orientation transform
+// Vertex shader for full-screen quad with orientation transform and intrinsics
 vertex VertexOut depthVertexShader(VertexIn in [[stage_in]],
-                                   constant float3x3& transform [[buffer(1)]]) {
+                                   constant float3x3& transform [[buffer(1)]],
+                                   constant float3x3& intrinsics [[buffer(2)]]) {
     VertexOut out;
     out.position = float4(in.position, 0.0, 1.0);
 
-    // Apply transform to texture coordinates for proper orientation
+    // Apply transform to texture coordinates for proper orientation and alignment
+    // This handles device orientation (portrait/landscape)
     float3 transformedCoord = transform * float3(in.texCoord, 1.0);
+
+    // Note: intrinsics are passed but not used in vertex shader
+    // They could be used for advanced lens distortion correction if needed
+
     out.texCoord = transformedCoord.xy;
 
     return out;
@@ -29,10 +35,17 @@ vertex VertexOut depthVertexShader(VertexIn in [[stage_in]],
 fragment float4 depthFragmentShader(VertexOut in [[stage_in]],
                                    texture2d<float, access::sample> depthTexture [[texture(0)]],
                                    constant float4& depthParams [[buffer(0)]]) {
-    constexpr sampler textureSampler(mag_filter::linear, min_filter::linear);
+    // High-quality sampler with edge clamping for better alignment at borders
+    constexpr sampler textureSampler(
+        mag_filter::linear,
+        min_filter::linear,
+        address::clamp_to_edge,  // Prevent artifacts at texture edges
+        coord::normalized        // Use normalized coordinates [0,1]
+    );
 
-    // Sample depth value
-    float depth = depthTexture.sample(textureSampler, in.texCoord).r;
+    // Sample depth value with bounds checking
+    float2 clampedCoord = clamp(in.texCoord, 0.0, 1.0);
+    float depth = depthTexture.sample(textureSampler, clampedCoord).r;
 
     // Extract parameters: minDepth, maxDepth, alpha
     float minDepth = depthParams.x;

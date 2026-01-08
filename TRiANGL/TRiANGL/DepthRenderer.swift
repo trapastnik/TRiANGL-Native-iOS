@@ -100,16 +100,32 @@ class DepthRenderer {
         }
     }
 
-    func render(depthMap: CVPixelBuffer, to drawable: CAMetalDrawable, interfaceOrientation: UIInterfaceOrientation = .portrait, minDepth: Float = 1.0, maxDepth: Float = 4.0, alpha: Float = 0.7) {
+    func render(
+        depthMap: CVPixelBuffer,
+        to drawable: CAMetalDrawable,
+        interfaceOrientation: UIInterfaceOrientation = .portrait,
+        minDepth: Float = 1.0,
+        maxDepth: Float = 4.0,
+        alpha: Float = 0.7,
+        cameraIntrinsics: simd_float3x3? = nil,
+        displayTransform: CGAffineTransform? = nil
+    ) {
         guard let pipelineState = pipelineState,
               let commandBuffer = commandQueue.makeCommandBuffer(),
               let depthTexture = createTexture(from: depthMap) else {
             return
         }
 
-        // Calculate transform matrix for proper orientation
-        // ARKit depth is in sensor orientation, need to match display orientation
-        let transformMatrix = getTransformMatrix(for: interfaceOrientation)
+        // Calculate transform matrix for proper orientation and alignment
+        // Priority: displayTransform (if provided) > orientation transform
+        let transformMatrix: simd_float3x3
+        if let displayTransform = displayTransform {
+            // Use ARFrame's displayTransform for perfect alignment
+            transformMatrix = convertCGAffineToSimd(displayTransform)
+        } else {
+            // Fallback to orientation-based transform
+            transformMatrix = getTransformMatrix(for: interfaceOrientation)
+        }
 
         var transform = transformMatrix
         let transformSize = MemoryLayout<simd_float3x3>.stride
@@ -117,6 +133,10 @@ class DepthRenderer {
         // Depth range parameters
         var depthParams = simd_float4(minDepth, maxDepth, alpha, 0)
         let depthParamsSize = MemoryLayout<simd_float4>.stride
+
+        // Camera intrinsics for precise alignment
+        var intrinsics = cameraIntrinsics ?? simd_float3x3(1.0) // Identity if not provided
+        let intrinsicsSize = MemoryLayout<simd_float3x3>.stride
 
         // Create render pass
         let renderPassDescriptor = MTLRenderPassDescriptor()
@@ -132,6 +152,7 @@ class DepthRenderer {
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         renderEncoder.setVertexBytes(&transform, length: transformSize, index: 1)
+        renderEncoder.setVertexBytes(&intrinsics, length: intrinsicsSize, index: 2)
         renderEncoder.setFragmentTexture(depthTexture, index: 0)
         renderEncoder.setFragmentBytes(&depthParams, length: depthParamsSize, index: 0)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
@@ -139,6 +160,19 @@ class DepthRenderer {
 
         commandBuffer.present(drawable)
         commandBuffer.commit()
+    }
+
+    private func convertCGAffineToSimd(_ transform: CGAffineTransform) -> simd_float3x3 {
+        // Convert CGAffineTransform (2D) to simd_float3x3 (3D homogeneous)
+        // CGAffineTransform matrix format:
+        // | a  b  0 |
+        // | c  d  0 |
+        // | tx ty 1 |
+        return simd_float3x3(
+            simd_float3(Float(transform.a), Float(transform.b), 0),
+            simd_float3(Float(transform.c), Float(transform.d), 0),
+            simd_float3(Float(transform.tx), Float(transform.ty), 1)
+        )
     }
 
     private func getTransformMatrix(for orientation: UIInterfaceOrientation) -> simd_float3x3 {

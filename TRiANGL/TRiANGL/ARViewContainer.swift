@@ -339,10 +339,23 @@ struct ARViewContainer: UIViewRepresentable {
 
                 let startTime = CACurrentMediaTime()
 
+                // Calculate camera intrinsics scaled to depth resolution
+                let cameraIntrinsics = calculateDepthIntrinsics(frame: frame, depthMap: depthMap)
+
+                // Get displayTransform for perfect alignment
+                let viewportSize = arView.bounds.size
+                let interfaceOrientation = getInterfaceOrientation()
+                let displayTransform = frame.displayTransform(for: interfaceOrientation, viewportSize: viewportSize)
+
                 // Route to appropriate renderer
                 if settings.renderMode == .metal {
                     // Metal rendering (GPU-only path)
-                    renderDepthMapMetal(depthMap: depthMap)
+                    renderDepthMapMetal(
+                        depthMap: depthMap,
+                        frame: frame,
+                        cameraIntrinsics: cameraIntrinsics,
+                        displayTransform: displayTransform
+                    )
 
                     let renderTime = (CACurrentMediaTime() - startTime) * 1000
                     DispatchQueue.main.async {
@@ -351,8 +364,6 @@ struct ARViewContainer: UIViewRepresentable {
                 } else {
                     // UIImage rendering (CPU path)
                     let cameraImage = frame.capturedImage
-                    let viewportSize = arView.bounds.size
-                    let interfaceOrientation = getInterfaceOrientation()
 
                     isProcessingDepth = true
 
@@ -363,7 +374,8 @@ struct ARViewContainer: UIViewRepresentable {
                             depthMap,
                             cameraImage: cameraImage,
                             viewportSize: viewportSize,
-                            interfaceOrientation: interfaceOrientation
+                            interfaceOrientation: interfaceOrientation,
+                            displayTransform: displayTransform
                         )
 
                         let renderTime = (CACurrentMediaTime() - startTime) * 1000
@@ -378,7 +390,39 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
 
-        private func renderDepthMapMetal(depthMap: CVPixelBuffer) {
+        private func calculateDepthIntrinsics(frame: ARFrame, depthMap: CVPixelBuffer) -> simd_float3x3 {
+            // Get camera intrinsics
+            let cameraIntrinsics = frame.camera.intrinsics
+            let cameraResolution = frame.camera.imageResolution
+
+            // Get depth resolution
+            let depthWidth = Float(CVPixelBufferGetWidth(depthMap))
+            let depthHeight = Float(CVPixelBufferGetHeight(depthMap))
+
+            // Scale intrinsics to depth resolution
+            // Formula: depth_intrinsics = camera_intrinsics * (depth_res / camera_res)
+            let scaleX = depthWidth / Float(cameraResolution.width)
+            let scaleY = depthHeight / Float(cameraResolution.height)
+
+            // Scale focal lengths and principal point
+            let fx = cameraIntrinsics[0, 0] * scaleX
+            let fy = cameraIntrinsics[1, 1] * scaleY
+            let cx = cameraIntrinsics[2, 0] * scaleX
+            let cy = cameraIntrinsics[2, 1] * scaleY
+
+            return simd_float3x3(
+                simd_float3(fx, 0, 0),
+                simd_float3(0, fy, 0),
+                simd_float3(cx, cy, 1)
+            )
+        }
+
+        private func renderDepthMapMetal(
+            depthMap: CVPixelBuffer,
+            frame: ARFrame,
+            cameraIntrinsics: simd_float3x3,
+            displayTransform: CGAffineTransform
+        ) {
             // Throttle Metal rendering to prevent excessive GPU calls
             let currentTime = CACurrentMediaTime()
             guard currentTime - lastMetalRenderTime >= minMetalRenderInterval else {
@@ -400,7 +444,9 @@ struct ARViewContainer: UIViewRepresentable {
                 interfaceOrientation: interfaceOrientation,
                 minDepth: settings.minDepth,
                 maxDepth: settings.maxDepth,
-                alpha: settings.overlayAlpha
+                alpha: settings.overlayAlpha,
+                cameraIntrinsics: cameraIntrinsics,
+                displayTransform: displayTransform
             )
         }
 
@@ -411,7 +457,13 @@ struct ARViewContainer: UIViewRepresentable {
             return windowScene.effectiveGeometry.interfaceOrientation
         }
 
-        private func depthMapToImage(_ depthMap: CVPixelBuffer, cameraImage: CVPixelBuffer, viewportSize: CGSize, interfaceOrientation: UIInterfaceOrientation) -> UIImage? {
+        private func depthMapToImage(
+            _ depthMap: CVPixelBuffer,
+            cameraImage: CVPixelBuffer,
+            viewportSize: CGSize,
+            interfaceOrientation: UIInterfaceOrientation,
+            displayTransform: CGAffineTransform? = nil
+        ) -> UIImage? {
             CVPixelBufferLockBaseAddress(depthMap, .readOnly)
             defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
 
@@ -423,7 +475,8 @@ struct ARViewContainer: UIViewRepresentable {
             }
 
             // Performance optimization: configurable downsampling
-            let downsampleFactor = settings?.downsampleFactor ?? 2
+            // For best alignment, use downsampleFactor = 1 (no downsampling)
+            let downsampleFactor = settings?.downsampleFactor ?? 1
             let outputWidth = depthWidth / downsampleFactor
             let outputHeight = depthHeight / downsampleFactor
 
@@ -436,12 +489,38 @@ struct ARViewContainer: UIViewRepresentable {
             let depthData = depthBaseAddress.assumingMemoryBound(to: Float32.self)
             var colorData = [UInt8](repeating: 0, count: outputWidth * outputHeight * 4)
 
+            // Prepare transform for better alignment
+            let useTransform = displayTransform != nil
+            let transform = displayTransform ?? .identity
+
             for y in 0..<outputHeight {
                 for x in 0..<outputWidth {
-                    // Sample from original depth map
-                    let srcX = x * downsampleFactor
-                    let srcY = y * downsampleFactor
+                    // Normalized coordinates [0, 1]
+                    var texCoordX = Float(x) / Float(outputWidth)
+                    var texCoordY = Float(y) / Float(outputHeight)
+
+                    // Apply displayTransform if available for perfect alignment
+                    if useTransform {
+                        let point = CGPoint(x: CGFloat(texCoordX), y: CGFloat(texCoordY))
+                        let transformedPoint = point.applying(transform)
+                        texCoordX = Float(transformedPoint.x)
+                        texCoordY = Float(transformedPoint.y)
+                    }
+
+                    // Clamp to valid range
+                    texCoordX = max(0.0, min(1.0, texCoordX))
+                    texCoordY = max(0.0, min(1.0, texCoordY))
+
+                    // Sample from original depth map with bilinear interpolation simulation
+                    let srcX = Int(texCoordX * Float(depthWidth - 1))
+                    let srcY = Int(texCoordY * Float(depthHeight - 1))
                     let srcIndex = srcY * depthWidth + srcX
+
+                    // Bounds check
+                    guard srcIndex >= 0 && srcIndex < depthWidth * depthHeight else {
+                        continue
+                    }
+
                     let depth = depthData[srcIndex]
 
                     // Normalize depth to 0-1 range using configurable min/max
