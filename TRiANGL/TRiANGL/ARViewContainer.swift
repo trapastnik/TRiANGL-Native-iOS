@@ -344,8 +344,17 @@ struct ARViewContainer: UIViewRepresentable {
 
                 let startTime = CACurrentMediaTime()
 
-                // Get current orientation and viewport
-                let viewportSize = arView.bounds.size
+                // Get current orientation and viewport size
+                // IMPORTANT: Use metalView drawable size for Metal rendering, not ARView bounds
+                let viewportSize: CGSize
+                if settings.renderMode == .metal, let metalView = metalView, let drawable = metalView.currentDrawable {
+                    // Use actual Metal drawable size for perfect alignment
+                    viewportSize = CGSize(width: drawable.texture.width, height: drawable.texture.height)
+                } else {
+                    // Fallback to ARView bounds for CPU rendering
+                    viewportSize = arView.bounds.size
+                }
+
                 let interfaceOrientation = getInterfaceOrientation()
 
                 // Get or calculate displayTransform
@@ -424,6 +433,7 @@ struct ARViewContainer: UIViewRepresentable {
             }
 
             let interfaceOrientation = getInterfaceOrientation()
+
             metalRenderer.render(
                 depthMap: depthMap,
                 to: drawable,
