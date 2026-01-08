@@ -98,27 +98,26 @@ class WiFiSignalMonitor: NSObject, ObservableObject {
 
     private func fetchWiFiInfo() async {
         // Attempt to get WiFi information using NEHotspotNetwork
-        do {
-            let networks = try await NEHotspotNetwork.fetchCurrent()
-            if let network = networks {
-                currentSSID = network.ssid
-                currentBSSID = network.bssid
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            NEHotspotNetwork.fetchCurrent { [weak self] network in
+                guard let self = self else {
+                    continuation.resume()
+                    return
+                }
 
-                // Note: iOS does not provide direct RSSI access via public APIs
-                // We'll use a heuristic based on signal strength indicator
-                // In a real app, you might use private APIs (not recommended) or
-                // estimate based on network performance tests
-
-                // Estimate RSSI based on connection quality
-                currentSignalStrength = estimateSignalStrength()
-            } else {
-                currentSignalStrength = -100
-                currentSSID = nil
-                currentBSSID = nil
+                Task { @MainActor in
+                    if let network = network {
+                        self.currentSSID = network.ssid
+                        self.currentBSSID = network.bssid
+                        self.currentSignalStrength = self.estimateSignalStrength()
+                    } else {
+                        self.currentSignalStrength = -100
+                        self.currentSSID = nil
+                        self.currentBSSID = nil
+                    }
+                    continuation.resume()
+                }
             }
-        } catch {
-            lastError = error
-            currentSignalStrength = -100
         }
     }
 
@@ -143,18 +142,6 @@ class WiFiSignalMonitor: NSObject, ObservableObject {
         // Production fallback
         return -60 // Assume reasonable signal
         #endif
-    }
-}
-
-// MARK: - NEHotspotNetwork Extension
-
-extension NEHotspotNetwork {
-    static func fetchCurrent() async throws -> NEHotspotNetwork? {
-        return try await withCheckedThrowingContinuation { continuation in
-            NEHotspotNetwork.fetchCurrent { network in
-                continuation.resume(returning: network)
-            }
-        }
     }
 }
 

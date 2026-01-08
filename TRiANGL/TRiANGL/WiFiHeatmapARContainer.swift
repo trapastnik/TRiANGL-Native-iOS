@@ -110,13 +110,14 @@ struct WiFiHeatmapARContainer: UIViewRepresentable {
             }
 
             // Add or update cells
+            let config = heatmapManager.configuration
             for cell in heatmapManager.heatmapCells {
                 if let entity = cellEntities[cell.id] {
                     // Update existing entity
-                    updateCellEntity(entity, for: cell)
+                    updateCellEntity(entity, for: cell, config: config)
                 } else {
                     // Create new entity
-                    let entity = createCellEntity(for: cell)
+                    let entity = createCellEntity(for: cell, config: config)
                     anchor.addChild(entity)
                     cellEntities[cell.id] = entity
                 }
@@ -128,8 +129,7 @@ struct WiFiHeatmapARContainer: UIViewRepresentable {
             }
         }
 
-        private func createCellEntity(for cell: HeatmapCell) -> ModelEntity {
-            let config = heatmapManager.configuration
+        nonisolated private func createCellEntity(for cell: HeatmapCell, config: HeatmapConfiguration) -> ModelEntity {
             let size = config.gridSize * 0.8 // Slightly smaller for visual separation
 
             // Create mesh
@@ -154,9 +154,8 @@ struct WiFiHeatmapARContainer: UIViewRepresentable {
             return entity
         }
 
-        private func updateCellEntity(_ entity: ModelEntity, for cell: HeatmapCell) {
+        nonisolated private func updateCellEntity(_ entity: ModelEntity, for cell: HeatmapCell, config: HeatmapConfiguration) {
             // Update color based on signal strength
-            let config = heatmapManager.configuration
             let strength = cell.averageNormalizedStrength
             let color = signalStrengthToColor(strength)
 
@@ -181,18 +180,17 @@ struct WiFiHeatmapARContainer: UIViewRepresentable {
             }
 
             // Add or update dead zones
+            let config = heatmapManager.configuration
             for zone in heatmapManager.deadZones {
                 if deadZoneEntities[zone.id] == nil {
-                    let entity = createDeadZoneEntity(for: zone)
+                    let entity = createDeadZoneEntity(for: zone, config: config)
                     anchor.addChild(entity)
                     deadZoneEntities[zone.id] = entity
                 }
             }
         }
 
-        private func createDeadZoneEntity(for zone: DeadZone) -> ModelEntity {
-            let config = heatmapManager.configuration
-
+        nonisolated private func createDeadZoneEntity(for zone: DeadZone, config: HeatmapConfiguration) -> ModelEntity {
             // Create sphere mesh
             let mesh = MeshResource.generateSphere(radius: zone.radius)
 
