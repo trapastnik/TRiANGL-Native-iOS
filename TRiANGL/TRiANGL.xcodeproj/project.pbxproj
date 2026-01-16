@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		000000003D1A2B3C4D5E7001 /* DepthSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000003D1A2B3C4D5E7000 /* DepthSettings.swift */; };
+		000000003D1A2B3C4D5E7003 /* DepthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000003D1A2B3C4D5E7002 /* DepthSettingsView.swift */; };
+		000000003D1A2B3C4D5E7005 /* MetalDepthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000003D1A2B3C4D5E7004 /* MetalDepthView.swift */; };
+		000000003D1A2B3C4D5E7007 /* DepthRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000003D1A2B3C4D5E7006 /* DepthRenderer.swift */; };
+		000000003D1A2B3C4D5E7009 /* DepthShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 000000003D1A2B3C4D5E7008 /* DepthShaders.metal */; };
 		3D1A2B3C4D5E6F70 /* TRiANGLApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A2B3C4D5E6F71 /* TRiANGLApp.swift */; };
 		3D1A2B3C4D5E6F72 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A2B3C4D5E6F73 /* ContentView.swift */; };
 		3D1A2B3C4D5E6F74 /* ARManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A2B3C4D5E6F75 /* ARManager.swift */; };
@@ -14,9 +19,22 @@
 		3D1A2B3C4D5E6F78 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A2B3C4D5E6F79 /* ScannerView.swift */; };
 		3D1A2B3C4D5E6F80 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3D1A2B3C4D5E6F81 /* Assets.xcassets */; };
 		3D1A2B3C4D5E6F82 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3D1A2B3C4D5E6F83 /* Preview Assets.xcassets */; };
+		953217DC2F0FEC51003799DF /* WiFiSignalMeasurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217DA2F0FEC51003799DF /* WiFiSignalMeasurement.swift */; };
+		953217DD2F0FEC51003799DF /* WiFiHeatmapManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D62F0FEC51003799DF /* WiFiHeatmapManager.swift */; };
+		953217DE2F0FEC51003799DF /* WiFiHeatmapARContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D52F0FEC51003799DF /* WiFiHeatmapARContainer.swift */; };
+		953217DF2F0FEC51003799DF /* WiFiHeatmapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D72F0FEC51003799DF /* WiFiHeatmapView.swift */; };
+		953217E02F0FEC51003799DF /* WiFiScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D92F0FEC51003799DF /* WiFiScannerView.swift */; };
+		953217E12F0FEC51003799DF /* WiFiSignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217DB2F0FEC51003799DF /* WiFiSignalMonitor.swift */; };
+		953217E22F0FEC51003799DF /* WiFiDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D42F0FEC51003799DF /* WiFiDevice.swift */; };
+		953217E32F0FEC51003799DF /* WiFiScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D82F0FEC51003799DF /* WiFiScanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		000000003D1A2B3C4D5E7000 /* DepthSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthSettings.swift; sourceTree = "<group>"; };
+		000000003D1A2B3C4D5E7002 /* DepthSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthSettingsView.swift; sourceTree = "<group>"; };
+		000000003D1A2B3C4D5E7004 /* MetalDepthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalDepthView.swift; sourceTree = "<group>"; };
+		000000003D1A2B3C4D5E7006 /* DepthRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthRenderer.swift; sourceTree = "<group>"; };
+		000000003D1A2B3C4D5E7008 /* DepthShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = DepthShaders.metal; sourceTree = "<group>"; };
 		3D1A2B3C4D5E6F71 /* TRiANGLApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TRiANGLApp.swift; sourceTree = "<group>"; };
 		3D1A2B3C4D5E6F73 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3D1A2B3C4D5E6F75 /* ARManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ARManager.swift; sourceTree = "<group>"; };
@@ -26,6 +44,14 @@
 		3D1A2B3C4D5E6F83 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		3D1A2B3C4D5E6F84 /* TRiANGL.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TRiANGL.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D1A2B3C4D5E6F85 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		953217D42F0FEC51003799DF /* WiFiDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiDevice.swift; sourceTree = "<group>"; };
+		953217D52F0FEC51003799DF /* WiFiHeatmapARContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiHeatmapARContainer.swift; sourceTree = "<group>"; };
+		953217D62F0FEC51003799DF /* WiFiHeatmapManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiHeatmapManager.swift; sourceTree = "<group>"; };
+		953217D72F0FEC51003799DF /* WiFiHeatmapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiHeatmapView.swift; sourceTree = "<group>"; };
+		953217D82F0FEC51003799DF /* WiFiScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiScanner.swift; sourceTree = "<group>"; };
+		953217D92F0FEC51003799DF /* WiFiScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiScannerView.swift; sourceTree = "<group>"; };
+		953217DA2F0FEC51003799DF /* WiFiSignalMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiSignalMeasurement.swift; sourceTree = "<group>"; };
+		953217DB2F0FEC51003799DF /* WiFiSignalMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiSignalMonitor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,6 +76,14 @@
 		3D1A2B3C4D5E6F88 /* TRiANGL */ = {
 			isa = PBXGroup;
 			children = (
+				953217D42F0FEC51003799DF /* WiFiDevice.swift */,
+				953217D52F0FEC51003799DF /* WiFiHeatmapARContainer.swift */,
+				953217D62F0FEC51003799DF /* WiFiHeatmapManager.swift */,
+				953217D72F0FEC51003799DF /* WiFiHeatmapView.swift */,
+				953217D82F0FEC51003799DF /* WiFiScanner.swift */,
+				953217D92F0FEC51003799DF /* WiFiScannerView.swift */,
+				953217DA2F0FEC51003799DF /* WiFiSignalMeasurement.swift */,
+				953217DB2F0FEC51003799DF /* WiFiSignalMonitor.swift */,
 				3D1A2B3C4D5E6F71 /* TRiANGLApp.swift */,
 				3D1A2B3C4D5E6F73 /* ContentView.swift */,
 				3D1A2B3C4D5E6F79 /* ScannerView.swift */,
@@ -58,6 +92,11 @@
 				3D1A2B3C4D5E6F81 /* Assets.xcassets */,
 				3D1A2B3C4D5E6F85 /* Info.plist */,
 				3D1A2B3C4D5E6F90 /* Preview Content */,
+				000000003D1A2B3C4D5E7000 /* DepthSettings.swift */,
+				000000003D1A2B3C4D5E7002 /* DepthSettingsView.swift */,
+				000000003D1A2B3C4D5E7004 /* MetalDepthView.swift */,
+				000000003D1A2B3C4D5E7006 /* DepthRenderer.swift */,
+				000000003D1A2B3C4D5E7008 /* DepthShaders.metal */,
 			);
 			path = TRiANGL;
 			sourceTree = "<group>";
@@ -151,8 +190,21 @@
 				3D1A2B3C4D5E6F72 /* ContentView.swift in Sources */,
 				3D1A2B3C4D5E6F70 /* TRiANGLApp.swift in Sources */,
 				3D1A2B3C4D5E6F74 /* ARManager.swift in Sources */,
+				953217DC2F0FEC51003799DF /* WiFiSignalMeasurement.swift in Sources */,
+				953217DD2F0FEC51003799DF /* WiFiHeatmapManager.swift in Sources */,
+				953217DE2F0FEC51003799DF /* WiFiHeatmapARContainer.swift in Sources */,
+				953217DF2F0FEC51003799DF /* WiFiHeatmapView.swift in Sources */,
+				953217E02F0FEC51003799DF /* WiFiScannerView.swift in Sources */,
+				953217E12F0FEC51003799DF /* WiFiSignalMonitor.swift in Sources */,
+				953217E22F0FEC51003799DF /* WiFiDevice.swift in Sources */,
+				953217E32F0FEC51003799DF /* WiFiScanner.swift in Sources */,
 				3D1A2B3C4D5E6F76 /* ARViewContainer.swift in Sources */,
 				3D1A2B3C4D5E6F78 /* ScannerView.swift in Sources */,
+				000000003D1A2B3C4D5E7001 /* DepthSettings.swift in Sources */,
+				000000003D1A2B3C4D5E7003 /* DepthSettingsView.swift in Sources */,
+				000000003D1A2B3C4D5E7005 /* MetalDepthView.swift in Sources */,
+				000000003D1A2B3C4D5E7007 /* DepthRenderer.swift in Sources */,
+				000000003D1A2B3C4D5E7009 /* DepthShaders.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
