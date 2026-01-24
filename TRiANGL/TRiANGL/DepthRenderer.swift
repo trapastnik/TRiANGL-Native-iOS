@@ -110,7 +110,8 @@ class DepthRenderer {
         minDepth: Float = 1.0,
         maxDepth: Float = 4.0,
         alpha: Float = 0.7,
-        displayTransform: CGAffineTransform? = nil
+        displayTransform: CGAffineTransform? = nil,
+        scaleFactor: Float = 1.0
     ) {
         guard let pipelineState = pipelineState,
               let commandBuffer = commandQueue.makeCommandBuffer(),
@@ -136,6 +137,10 @@ class DepthRenderer {
         var depthParams = simd_float4(minDepth, maxDepth, alpha, 0)
         let depthParamsSize = MemoryLayout<simd_float4>.stride
 
+        // Scale factor for FOV compensation between camera and LiDAR
+        var scale = scaleFactor
+        let scaleSize = MemoryLayout<Float>.stride
+
         // Note: Camera intrinsics removed from pipeline
         // displayTransform already provides accurate alignment including camera properties
 
@@ -153,7 +158,7 @@ class DepthRenderer {
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         renderEncoder.setVertexBytes(&transform, length: transformSize, index: 1)
-        // Intrinsics buffer removed - not needed with displayTransform
+        renderEncoder.setVertexBytes(&scale, length: scaleSize, index: 2)
         renderEncoder.setFragmentTexture(depthTexture, index: 0)
         renderEncoder.setFragmentBytes(&depthParams, length: depthParamsSize, index: 0)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)

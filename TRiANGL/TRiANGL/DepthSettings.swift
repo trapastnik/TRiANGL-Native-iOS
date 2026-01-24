@@ -57,6 +57,13 @@ class DepthSettings: ObservableObject {
     @Published var centerDistance: Float? = nil
     @Published var showCrosshair: Bool = true
 
+    // Manual scale adjustment for depth/camera alignment
+    @Published var depthScale: Float = 1.3 {
+        didSet {
+            depthScale = max(0.1, min(depthScale, 3.0))
+        }
+    }
+
     // Show/hide settings panel
     @Published var showSettings: Bool = false
 }

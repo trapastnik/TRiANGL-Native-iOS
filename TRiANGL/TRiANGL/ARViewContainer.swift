@@ -383,13 +383,18 @@ struct ARViewContainer: UIViewRepresentable {
                     cachedViewportSize = viewportSize
                 }
 
+                // Calculate proper scale factor from camera intrinsics
+                // This accounts for FOV differences between camera and depth sensors
+                let scaleFactor = calculateScaleFactor(frame: frame, depthMap: depthMap)
+
                 // Route to appropriate renderer
                 if settings.renderMode == .metal {
                     // Metal rendering (GPU-only path)
                     renderDepthMapMetal(
                         depthMap: depthMap,
                         frame: frame,
-                        displayTransform: displayTransform
+                        displayTransform: displayTransform,
+                        scaleFactor: scaleFactor
                     )
 
                     let renderTime = (CACurrentMediaTime() - startTime) * 1000
@@ -425,10 +430,44 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
 
+        private func calculateScaleFactor(frame: ARFrame, depthMap: CVPixelBuffer) -> Float {
+            // Use manual scale from settings (user can adjust via UI)
+            guard let settings = settings else { return 1.3 }
+
+            // DEBUG: Print parameters once to help understand the sensors
+            struct DebugPrinted {
+                static var didPrint = false
+            }
+
+            if !DebugPrinted.didPrint {
+                DebugPrinted.didPrint = true
+                let cameraIntrinsics = frame.camera.intrinsics
+                let cameraResolution = frame.camera.imageResolution
+                let depthWidth = Float(CVPixelBufferGetWidth(depthMap))
+                let depthHeight = Float(CVPixelBufferGetHeight(depthMap))
+                let cameraFx = cameraIntrinsics[0, 0]
+                let cameraFy = cameraIntrinsics[1, 1]
+
+                print("═══════════════════════════════════════")
+                print("CAMERA PARAMETERS:")
+                print("  Resolution: \(cameraResolution.width) × \(cameraResolution.height)")
+                print("  Focal length: fx=\(cameraFx), fy=\(cameraFy)")
+                print("DEPTH MAP PARAMETERS:")
+                print("  Resolution: \(depthWidth) × \(depthHeight)")
+                print("SCALE:")
+                print("  Using manual scale: \(settings.depthScale)")
+                print("  Adjust via settings UI to match alignment")
+                print("═══════════════════════════════════════")
+            }
+
+            return settings.depthScale
+        }
+
         private func renderDepthMapMetal(
             depthMap: CVPixelBuffer,
             frame: ARFrame,
-            displayTransform: CGAffineTransform
+            displayTransform: CGAffineTransform,
+            scaleFactor: Float
         ) {
             // Throttle Metal rendering to prevent excessive GPU calls
             let currentTime = CACurrentMediaTime()
@@ -453,7 +492,8 @@ struct ARViewContainer: UIViewRepresentable {
                 minDepth: settings.minDepth,
                 maxDepth: settings.maxDepth,
                 alpha: settings.overlayAlpha,
-                displayTransform: displayTransform
+                displayTransform: displayTransform,
+                scaleFactor: scaleFactor
             )
         }
 

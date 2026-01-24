@@ -27,6 +27,7 @@
 		953217E12F0FEC51003799DF /* WiFiSignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217DB2F0FEC51003799DF /* WiFiSignalMonitor.swift */; };
 		953217E22F0FEC51003799DF /* WiFiDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D42F0FEC51003799DF /* WiFiDevice.swift */; };
 		953217E32F0FEC51003799DF /* WiFiScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217D82F0FEC51003799DF /* WiFiScanner.swift */; };
+		953217EC2F102372003799DF /* DepthCrosshairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953217EB2F102372003799DF /* DepthCrosshairView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +53,7 @@
 		953217D92F0FEC51003799DF /* WiFiScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiScannerView.swift; sourceTree = "<group>"; };
 		953217DA2F0FEC51003799DF /* WiFiSignalMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiSignalMeasurement.swift; sourceTree = "<group>"; };
 		953217DB2F0FEC51003799DF /* WiFiSignalMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiSignalMonitor.swift; sourceTree = "<group>"; };
+		953217EB2F102372003799DF /* DepthCrosshairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthCrosshairView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +78,7 @@
 		3D1A2B3C4D5E6F88 /* TRiANGL */ = {
 			isa = PBXGroup;
 			children = (
+				953217EB2F102372003799DF /* DepthCrosshairView.swift */,
 				953217D42F0FEC51003799DF /* WiFiDevice.swift */,
 				953217D52F0FEC51003799DF /* WiFiHeatmapARContainer.swift */,
 				953217D62F0FEC51003799DF /* WiFiHeatmapManager.swift */,
@@ -192,6 +195,7 @@
 				3D1A2B3C4D5E6F74 /* ARManager.swift in Sources */,
 				953217DC2F0FEC51003799DF /* WiFiSignalMeasurement.swift in Sources */,
 				953217DD2F0FEC51003799DF /* WiFiHeatmapManager.swift in Sources */,
+				953217EC2F102372003799DF /* DepthCrosshairView.swift in Sources */,
 				953217DE2F0FEC51003799DF /* WiFiHeatmapARContainer.swift in Sources */,
 				953217DF2F0FEC51003799DF /* WiFiHeatmapView.swift in Sources */,
 				953217E02F0FEC51003799DF /* WiFiScannerView.swift in Sources */,

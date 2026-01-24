@@ -72,6 +72,19 @@ struct DepthSettingsView: View {
                     .accentColor(.cyan)
             }
 
+            // Depth Scale (for alignment with camera)
+            HStack {
+                Text("Scale:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Text(String(format: "%.2f", settings.depthScale))
+                    .font(.caption)
+                    .foregroundColor(.cyan)
+                    .frame(width: 40)
+                Slider(value: $settings.depthScale, in: 0.5...2.5, step: 0.05)
+                    .accentColor(.cyan)
+            }
+
             Divider().background(Color.white.opacity(0.3))
 
             // Depth Range - Compact

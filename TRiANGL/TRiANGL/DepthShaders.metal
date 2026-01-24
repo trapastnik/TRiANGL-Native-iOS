@@ -15,7 +15,8 @@ struct VertexOut {
 // Vertex shader for full-screen quad with orientation transform
 // Note: Camera intrinsics removed - displayTransform already handles alignment
 vertex VertexOut depthVertexShader(VertexIn in [[stage_in]],
-                                   constant float3x3& transform [[buffer(1)]]) {
+                                   constant float3x3& transform [[buffer(1)]],
+                                   constant float& scaleFactor [[buffer(2)]]) {
     VertexOut out;
     out.position = float4(in.position, 0.0, 1.0);
 
@@ -42,9 +43,7 @@ vertex VertexOut depthVertexShader(VertexIn in [[stage_in]],
     // scale > 1.0 = zoom out (samples larger area, makes depth appear smaller)
     // scale < 1.0 = zoom in (samples smaller area, makes depth appear larger)
     float2 center = float2(0.5, 0.5);
-    float scale = 1.3; // Empirically determined via crosshair testing
-                       // Adjust based on your device/testing
-    transformedCoord.xy = (transformedCoord.xy - center) * scale + center;
+    transformedCoord.xy = (transformedCoord.xy - center) * scaleFactor + center;
 
     out.texCoord = transformedCoord.xy;
 
