@@ -4,147 +4,136 @@ struct DepthSettingsView: View {
     @ObservedObject var settings: DepthSettings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Depth Map Settings")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Settings")
                 .font(.headline)
-                .padding(.bottom, 8)
+                .foregroundColor(.white)
 
-            // Render Mode
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Render Mode")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-
-                Picker("Render Mode", selection: $settings.renderMode) {
-                    ForEach(DepthRenderMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            Divider()
-
-            // Frame Skip
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Frame Skip")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text("\(settings.frameSkip) (every \(settings.frameSkip + 1) frame)")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-
-                HStack {
-                    Text("0")
-                        .font(.caption2)
-                    Slider(value: Binding(
-                        get: { Double(settings.frameSkip) },
-                        set: { settings.frameSkip = Int($0) }
-                    ), in: 0...10, step: 1)
-                    Text("10")
-                        .font(.caption2)
+            // Render Mode - Compact
+            Picker("", selection: $settings.renderMode) {
+                ForEach(DepthRenderMode.allCases, id: \.self) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
 
-            // Downsample Factor
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Resolution")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text("1/\(settings.downsampleFactor)")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
+            Divider().background(Color.white.opacity(0.3))
 
-                HStack {
-                    Text("Full")
-                        .font(.caption2)
-                    Slider(value: Binding(
-                        get: { Double(settings.downsampleFactor) },
-                        set: { settings.downsampleFactor = Int($0) }
-                    ), in: 1...8, step: 1)
-                    Text("1/8")
-                        .font(.caption2)
-                }
+            // Frame Skip - Compact
+            HStack {
+                Text("Skip:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Text("\(settings.frameSkip)")
+                    .font(.caption)
+                    .foregroundColor(.cyan)
+                    .frame(width: 20)
+                Slider(value: Binding(
+                    get: { Double(settings.frameSkip) },
+                    set: { settings.frameSkip = Int($0) }
+                ), in: 0...10, step: 1)
+                .accentColor(.cyan)
             }
 
-            Divider()
+            // Resolution - Compact
+            HStack {
+                Text("Res:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Text("1/\(settings.downsampleFactor)")
+                    .font(.caption)
+                    .foregroundColor(.cyan)
+                    .frame(width: 30)
+                Slider(value: Binding(
+                    get: { Double(settings.downsampleFactor) },
+                    set: { settings.downsampleFactor = Int($0) }
+                ), in: 1...8, step: 1)
+                .accentColor(.cyan)
+            }
 
-            // Depth Source
-            Toggle("Use Smoothed Depth", isOn: $settings.useSmoothedDepth)
-                .font(.subheadline)
+            Divider().background(Color.white.opacity(0.3))
+
+            // Smoothed Depth Toggle
+            Toggle("Smoothed", isOn: $settings.useSmoothedDepth)
+                .font(.caption)
+                .foregroundColor(.white)
 
             // Overlay Alpha
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Overlay Transparency")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(String(format: "%.1f", settings.overlayAlpha))
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-
+            HStack {
+                Text("Alpha:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Text(String(format: "%.1f", settings.overlayAlpha))
+                    .font(.caption)
+                    .foregroundColor(.cyan)
+                    .frame(width: 30)
                 Slider(value: $settings.overlayAlpha, in: 0...1, step: 0.1)
+                    .accentColor(.cyan)
             }
 
-            Divider()
+            // Depth Scale (for alignment with camera)
+            HStack {
+                Text("Scale:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Text(String(format: "%.2f", settings.depthScale))
+                    .font(.caption)
+                    .foregroundColor(.cyan)
+                    .frame(width: 40)
+                Slider(value: $settings.depthScale, in: 0.5...2.5, step: 0.05)
+                    .accentColor(.cyan)
+            }
 
-            // Depth Range
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Depth Range (meters)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            Divider().background(Color.white.opacity(0.3))
 
+            // Depth Range - Compact
+            VStack(spacing: 6) {
                 HStack {
                     Text("Min:")
-                    Slider(value: $settings.minDepth, in: 0.1...5, step: 0.1)
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.8))
                     Text(String(format: "%.1fm", settings.minDepth))
                         .font(.caption)
-                        .frame(width: 50)
+                        .foregroundColor(.cyan)
+                        .frame(width: 40)
+                    Slider(value: $settings.minDepth, in: 0.1...5, step: 0.1)
+                        .accentColor(.cyan)
                 }
 
                 HStack {
                     Text("Max:")
-                    Slider(value: $settings.maxDepth, in: 1...10, step: 0.1)
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.8))
                     Text(String(format: "%.1fm", settings.maxDepth))
                         .font(.caption)
-                        .frame(width: 50)
+                        .foregroundColor(.cyan)
+                        .frame(width: 40)
+                    Slider(value: $settings.maxDepth, in: 1...10, step: 0.1)
+                        .accentColor(.cyan)
                 }
             }
 
-            Divider()
+            Divider().background(Color.white.opacity(0.3))
 
-            // Performance Stats
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Performance")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-
-                HStack {
-                    Text("FPS:")
-                    Text(String(format: "%.1f", settings.fps))
-                        .foregroundColor(.green)
-                    Spacer()
-                    Text("Render Time:")
-                    Text(String(format: "%.1fms", settings.renderTime))
-                        .foregroundColor(.orange)
-                }
-                .font(.caption)
+            // Performance Stats - Compact
+            HStack {
+                Text("FPS:")
+                    .font(.caption2)
+                    .foregroundColor(.white.opacity(0.6))
+                Text(String(format: "%.0f", settings.fps))
+                    .font(.caption2)
+                    .foregroundColor(.green)
+                Spacer()
+                Text("Render:")
+                    .font(.caption2)
+                    .foregroundColor(.white.opacity(0.6))
+                Text(String(format: "%.1fms", settings.renderTime))
+                    .font(.caption2)
+                    .foregroundColor(.orange)
             }
-
-            Spacer()
         }
-        .padding()
-        .background(Color(.systemBackground).opacity(0.95))
-        .cornerRadius(12)
-        .shadow(radius: 10)
+        .padding(12)
     }
 }
 

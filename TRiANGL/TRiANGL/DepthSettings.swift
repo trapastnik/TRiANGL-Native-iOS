@@ -7,25 +7,27 @@ enum DepthRenderMode: String, CaseIterable {
 }
 
 class DepthSettings: ObservableObject {
-    // Render mode
-    @Published var renderMode: DepthRenderMode = .uiImage
+    // Render mode (Metal recommended for best alignment)
+    @Published var renderMode: DepthRenderMode = .metal
 
     // Frame skipping (0 = process every frame, 1 = every 2nd, 2 = every 3rd, etc.)
-    @Published var frameSkip: Int = 2 {
+    // Lower values = better alignment but higher CPU/GPU usage
+    @Published var frameSkip: Int = 1 {
         didSet {
             frameSkip = max(0, min(frameSkip, 10))
         }
     }
 
     // Downsampling factor (1 = full res, 2 = half res, 3 = third res, etc.)
-    @Published var downsampleFactor: Int = 2 {
+    // Use 1 for best alignment, higher values for performance
+    @Published var downsampleFactor: Int = 1 {
         didSet {
             downsampleFactor = max(1, min(downsampleFactor, 8))
         }
     }
 
-    // Use smoothed vs raw depth
-    @Published var useSmoothedDepth: Bool = false
+    // Use smoothed vs raw depth (smoothed = better temporal consistency)
+    @Published var useSmoothedDepth: Bool = true
 
     // Overlay transparency (0.0 - 1.0)
     @Published var overlayAlpha: Float = 0.7 {
@@ -50,6 +52,17 @@ class DepthSettings: ObservableObject {
     // Performance stats
     @Published var fps: Double = 0.0
     @Published var renderTime: Double = 0.0
+
+    // Center distance measurement (for crosshair)
+    @Published var centerDistance: Float? = nil
+    @Published var showCrosshair: Bool = true
+
+    // Manual scale adjustment for depth/camera alignment
+    @Published var depthScale: Float = 1.3 {
+        didSet {
+            depthScale = max(0.1, min(depthScale, 3.0))
+        }
+    }
 
     // Show/hide settings panel
     @Published var showSettings: Bool = false

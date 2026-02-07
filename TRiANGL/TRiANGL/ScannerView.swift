@@ -10,6 +10,15 @@ struct ScannerView: View {
             ARViewContainer(arManager: arManager, settings: arManager.depthSettings)
                 .edgesIgnoringSafeArea(.all)
 
+            // Crosshair overlay (only when depth map is shown)
+            if arManager.showDepthMap {
+                DepthCrosshairView(
+                    centerDistance: arManager.depthSettings.centerDistance,
+                    isEnabled: arManager.depthSettings.showCrosshair
+                )
+                .allowsHitTesting(false)
+            }
+
             // UI Overlay
             VStack {
                 // Top Status Bar
@@ -38,14 +47,26 @@ struct ScannerView: View {
                     }
                     .padding(.horizontal, 8)
 
-                    // Depth map toggle
-                    Button(action: {
-                        arManager.showDepthMap.toggle()
-                    }) {
-                        Image(systemName: arManager.showDepthMap ? "camera.metering.matrix" : "camera.metering.none")
-                            .font(.system(size: 32))
-                            .foregroundColor(arManager.showDepthMap ? .cyan : .white)
-                            .shadow(radius: 4)
+                    // Depth map toggle with mode indicator
+                    VStack(spacing: 2) {
+                        Button(action: {
+                            arManager.showDepthMap.toggle()
+                        }) {
+                            Image(systemName: arManager.showDepthMap ? "camera.metering.matrix" : "camera.metering.none")
+                                .font(.system(size: 32))
+                                .foregroundColor(arManager.showDepthMap ? .cyan : .white)
+                                .shadow(radius: 4)
+                        }
+
+                        if arManager.showDepthMap {
+                            Text(arManager.depthSettings.renderMode == .metal ? "Metal" : "CPU")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(arManager.depthSettings.renderMode == .metal ? .green : .orange)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.black.opacity(0.6))
+                                .cornerRadius(4)
+                        }
                     }
                     .padding(.horizontal, 8)
 
@@ -195,25 +216,50 @@ struct ScannerView: View {
                 .padding(.bottom, 40)
             }
 
-            // Settings Panel (overlay)
+            // Settings Panel (overlay) - bottom left corner, semi-transparent
             if arManager.depthSettings.showSettings {
-                Color.black.opacity(0.3)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        arManager.depthSettings.showSettings = false
-                    }
-
                 VStack {
                     Spacer()
-                    DepthSettingsView(settings: arManager.depthSettings)
-                        .frame(maxWidth: 400)
-                        .padding()
-                    Spacer()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack {
+                                Text("Settings")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                // Close button
+                                Button(action: {
+                                    arManager.depthSettings.showSettings = false
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.top, 8)
+
+                            DepthSettingsView(settings: arManager.depthSettings)
+                                .frame(width: 280)
+                        }
+                        .background(Color.black.opacity(0.75))
+                        .cornerRadius(12)
+                        .shadow(radius: 10)
+                        .padding(.leading, 16)
+                        .padding(.bottom, 180)
+
+                        Spacer()
+                    }
                 }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(.move(edge: .leading).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.3), value: arManager.depthSettings.showSettings)
+        .animation(nil, value: arManager.depthSettings.overlayAlpha)
+        .animation(nil, value: arManager.depthSettings.minDepth)
+        .animation(nil, value: arManager.depthSettings.maxDepth)
+        .animation(nil, value: arManager.depthSettings.frameSkip)
+        .animation(nil, value: arManager.depthSettings.downsampleFactor)
         .onAppear {
             arManager.startSession()
         }

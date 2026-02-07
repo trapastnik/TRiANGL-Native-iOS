@@ -11,14 +11,17 @@ class DepthRenderer {
     private var vertexBuffer: MTLBuffer?
 
     // Full-screen quad vertices (position + texCoord)
+    // Note: Both X and Y texture coordinates inverted to match depth map orientation
+    // X inverted: 1.0 at left, 0.0 at right (depth map is horizontally mirrored)
+    // Y inverted: 1.0 at top, 0.0 at bottom (depth map uses top-down convention)
     private let quadVertices: [Float] = [
-        // Positions       // TexCoords
-        -1.0,  1.0,        0.0, 0.0,  // Top left
-        -1.0, -1.0,        0.0, 1.0,  // Bottom left
-         1.0, -1.0,        1.0, 1.0,  // Bottom right
-        -1.0,  1.0,        0.0, 0.0,  // Top left
-         1.0, -1.0,        1.0, 1.0,  // Bottom right
-         1.0,  1.0,        1.0, 0.0   // Top right
+        // Positions       // TexCoords (X and Y inverted)
+        -1.0,  1.0,        1.0, 1.0,  // Top left
+        -1.0, -1.0,        1.0, 0.0,  // Bottom left
+         1.0, -1.0,        0.0, 0.0,  // Bottom right
+        -1.0,  1.0,        1.0, 1.0,  // Top left
+         1.0, -1.0,        0.0, 0.0,  // Bottom right
+         1.0,  1.0,        0.0, 1.0   // Top right
     ]
 
     init?() {
@@ -100,12 +103,46 @@ class DepthRenderer {
         }
     }
 
-    func render(depthMap: CVPixelBuffer, to drawable: CAMetalDrawable) {
+    func render(
+        depthMap: CVPixelBuffer,
+        to drawable: CAMetalDrawable,
+        interfaceOrientation: UIInterfaceOrientation = .portrait,
+        minDepth: Float = 1.0,
+        maxDepth: Float = 4.0,
+        alpha: Float = 0.7,
+        displayTransform: CGAffineTransform? = nil,
+        scaleFactor: Float = 1.0
+    ) {
         guard let pipelineState = pipelineState,
               let commandBuffer = commandQueue.makeCommandBuffer(),
               let depthTexture = createTexture(from: depthMap) else {
             return
         }
+
+        // Calculate transform matrix for proper orientation and alignment
+        // Priority: displayTransform (if provided) > orientation transform
+        let transformMatrix: simd_float3x3
+        if let displayTransform = displayTransform {
+            // Use ARFrame's displayTransform for perfect alignment
+            transformMatrix = convertCGAffineToSimd(displayTransform)
+        } else {
+            // Fallback to orientation-based transform
+            transformMatrix = getTransformMatrix(for: interfaceOrientation)
+        }
+
+        var transform = transformMatrix
+        let transformSize = MemoryLayout<simd_float3x3>.stride
+
+        // Depth range parameters
+        var depthParams = simd_float4(minDepth, maxDepth, alpha, 0)
+        let depthParamsSize = MemoryLayout<simd_float4>.stride
+
+        // Scale factor for FOV compensation between camera and LiDAR
+        var scale = scaleFactor
+        let scaleSize = MemoryLayout<Float>.stride
+
+        // Note: Camera intrinsics removed from pipeline
+        // displayTransform already provides accurate alignment including camera properties
 
         // Create render pass
         let renderPassDescriptor = MTLRenderPassDescriptor()
@@ -120,12 +157,80 @@ class DepthRenderer {
 
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        renderEncoder.setVertexBytes(&transform, length: transformSize, index: 1)
+        renderEncoder.setVertexBytes(&scale, length: scaleSize, index: 2)
         renderEncoder.setFragmentTexture(depthTexture, index: 0)
+        renderEncoder.setFragmentBytes(&depthParams, length: depthParamsSize, index: 0)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
         renderEncoder.endEncoding()
 
         commandBuffer.present(drawable)
         commandBuffer.commit()
+    }
+
+    private func convertCGAffineToSimd(_ transform: CGAffineTransform) -> simd_float3x3 {
+        // Convert CGAffineTransform (2D) to simd_float3x3 (3D homogeneous)
+        //
+        // CGAffineTransform represents matrix:
+        // | a  c  tx |
+        // | b  d  ty |
+        // | 0  0  1  |
+        //
+        // simd_float3x3 is column-major, so we need to transpose:
+        // Column 0: (a, b, 0)
+        // Column 1: (c, d, 0)
+        // Column 2: (tx, ty, 1)
+        return simd_float3x3(
+            simd_float3(Float(transform.a), Float(transform.b), 0),
+            simd_float3(Float(transform.c), Float(transform.d), 0),
+            simd_float3(Float(transform.tx), Float(transform.ty), 1)
+        )
+    }
+
+    private func getTransformMatrix(for orientation: UIInterfaceOrientation) -> simd_float3x3 {
+        // Transform texture coordinates to match interface orientation
+        // Portrait: rotate 90° clockwise (sensor is landscape left)
+        // LandscapeRight: rotate 180° (sensor upside down)
+        // PortraitUpsideDown: rotate 90° counter-clockwise
+        // LandscapeLeft: no rotation
+
+        switch orientation {
+        case .portrait:
+            // Rotate 90° clockwise: (x,y) -> (1-y, x)
+            return simd_float3x3(
+                simd_float3(0, 1, 0),   // new x = old y
+                simd_float3(-1, 0, 1),  // new y = 1 - old x
+                simd_float3(0, 0, 1)
+            )
+        case .portraitUpsideDown:
+            // Rotate 90° counter-clockwise: (x,y) -> (y, 1-x)
+            return simd_float3x3(
+                simd_float3(0, -1, 1),  // new x = 1 - old y
+                simd_float3(1, 0, 0),   // new y = old x
+                simd_float3(0, 0, 1)
+            )
+        case .landscapeLeft:
+            // Rotate 180°: (x,y) -> (1-x, 1-y)
+            return simd_float3x3(
+                simd_float3(-1, 0, 1),  // new x = 1 - old x
+                simd_float3(0, -1, 1),  // new y = 1 - old y
+                simd_float3(0, 0, 1)
+            )
+        case .landscapeRight:
+            // No rotation (identity)
+            return simd_float3x3(
+                simd_float3(1, 0, 0),
+                simd_float3(0, 1, 0),
+                simd_float3(0, 0, 1)
+            )
+        default:
+            // Default to portrait
+            return simd_float3x3(
+                simd_float3(0, 1, 0),
+                simd_float3(-1, 0, 1),
+                simd_float3(0, 0, 1)
+            )
+        }
     }
 
     private func createTexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {
